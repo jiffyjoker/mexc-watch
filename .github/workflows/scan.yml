@@ -1,0 +1,19 @@
+name: mexc-scan
+on:
+  schedule: [{cron: '*/5 * * * *'}]
+  workflow_dispatch:
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache/restore@v4
+        with: {path: seen.json, key: seen-${{ github.run_id }}, restore-keys: seen-}
+      - run: python3 scan.py
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
+      - uses: actions/cache/save@v4
+        if: always()
+        with: {path: seen.json, key: seen-${{ github.run_id }}}
