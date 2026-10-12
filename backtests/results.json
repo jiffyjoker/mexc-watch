@@ -1,0 +1,207 @@
+{
+ "span_days": 14,
+ "universe": 30,
+ "from": "2026-09-29",
+ "1_exits": {
+  "fixed": {
+   "n": 94,
+   "win": 47.9,
+   "avgR": 0.151,
+   "totR": 14.23,
+   "maxDD_R": 11.96
+  },
+  "trail": {
+   "n": 94,
+   "win": 48.9,
+   "avgR": 0.171,
+   "totR": 16.09,
+   "maxDD_R": 10.81
+  },
+  "half": {
+   "n": 94,
+   "win": 52.1,
+   "avgR": 0.086,
+   "totR": 8.1,
+   "maxDD_R": 9.5
+  },
+  "time": {
+   "n": 94,
+   "win": 48.9,
+   "avgR": 0.091,
+   "totR": 8.55,
+   "maxDD_R": 6.64
+  }
+ },
+ "2_gates": {
+  "all_breakout_retest_no_gates": {
+   "n": 125,
+   "win": 48.0,
+   "avgR": 0.157,
+   "totR": 19.68,
+   "maxDD_R": 16.69
+  },
+  "location": {
+   "pass_": {
+    "n": 92,
+    "win": 47.8,
+    "avgR": 0.15,
+    "totR": 13.76,
+    "maxDD_R": 11.96
+   },
+   "blocked": {
+    "n": 33,
+    "win": 48.5,
+    "avgR": 0.179,
+    "totR": 5.92,
+    "maxDD_R": 4.73
+   },
+   "winners_blocked": 16,
+   "losers_blocked": 17
+  },
+  "funding": {
+   "pass_": {
+    "n": 125,
+    "win": 48.0,
+    "avgR": 0.157,
+    "totR": 19.68,
+    "maxDD_R": 16.69
+   },
+   "blocked": {
+    "n": 0
+   },
+   "winners_blocked": 0,
+   "losers_blocked": 0
+  },
+  "oi": "not testable: MEXC has no free OI history; self-built oi.json only began 12 Oct (~hours), 0 historical trades have a 6h OI value"
+ },
+ "3_signals": {
+  "breakout": {
+   "fixed": {
+    "n": 88,
+    "win": 47.7,
+    "avgR": 0.147,
+    "totR": 12.89,
+    "maxDD_R": 10.93
+   },
+   "trail": {
+    "n": 88,
+    "win": 48.9,
+    "avgR": 0.179,
+    "totR": 15.72,
+    "maxDD_R": 9.78
+   }
+  },
+  "retest": {
+   "fixed": {
+    "n": 4,
+    "win": 50.0,
+    "avgR": 0.217,
+    "totR": 0.87,
+    "maxDD_R": 2.07
+   },
+   "trail": {
+    "n": 4,
+    "win": 50.0,
+    "avgR": 0.184,
+    "totR": 0.73,
+    "maxDD_R": 2.07
+   }
+  },
+  "sweep": {
+   "fixed": {
+    "n": 2,
+    "win": 50.0,
+    "avgR": 0.233,
+    "totR": 0.47,
+    "maxDD_R": 1.02
+   },
+   "trail": {
+    "n": 2,
+    "win": 50.0,
+    "avgR": -0.179,
+    "totR": -0.36,
+    "maxDD_R": 1.02
+   }
+  },
+  "btc_move/oi_surge": "not entries / no OI history"
+ },
+ "4_sessions": {
+  "Asia 00-08Z (10am-6pm Bris)": {
+   "n": 23,
+   "win": 34.8,
+   "avgR": -0.125,
+   "totR": -2.88,
+   "maxDD_R": 6.37
+  },
+  "Late 21-24Z (7-10am Bris)": {
+   "n": 5,
+   "win": 20.0,
+   "avgR": -0.533,
+   "totR": -2.66,
+   "maxDD_R": 4.13
+  },
+  "London 08-13Z (6-11pm Bris)": {
+   "n": 22,
+   "win": 50.0,
+   "avgR": 0.131,
+   "totR": 2.89,
+   "maxDD_R": 2.66
+  },
+  "US 13-21Z (11pm-7am Bris)": {
+   "n": 44,
+   "win": 56.8,
+   "avgR": 0.384,
+   "totR": 16.88,
+   "maxDD_R": 5.76
+  }
+ },
+ "5_btc4h": {
+  "with": {
+   "n": 76,
+   "win": 48.7,
+   "avgR": 0.191,
+   "totR": 14.55,
+   "maxDD_R": 10.93
+  },
+  "against": {
+   "n": 9,
+   "win": 44.4,
+   "avgR": 0.082,
+   "totR": 0.74,
+   "maxDD_R": 3.68
+  }
+ },
+ "6_sizing": {
+  "RULES 5%/2.5% after 2L/3L daily brake": {
+   "fixed": {
+    "end_equity": 120.79,
+    "max_dd_pct": 29.6
+   },
+   "trail": {
+    "end_equity": 157.07,
+    "max_dd_pct": 31.5
+   }
+  },
+  "flat 2.5%": {
+   "fixed": {
+    "end_equity": 83.92,
+    "max_dd_pct": 26.2
+   },
+   "trail": {
+    "end_equity": 87.01,
+    "max_dd_pct": 24.1
+   }
+  },
+  "flat 5%": {
+   "fixed": {
+    "end_equity": 105.41,
+    "max_dd_pct": 46.1
+   },
+   "trail": {
+    "end_equity": 111.35,
+    "max_dd_pct": 43.0
+   }
+  },
+  "note": "A+ 7% tier not mechanically identifiable (needs triad/1h judgement) so treated as 5%; trades replayed sequentially, overlap/max-3-open ignored"
+ }
+}
