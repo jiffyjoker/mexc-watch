@@ -1,10 +1,14 @@
 name: rate-test
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      cmd: {description: 'probe command', default: 'python3 bench.py'}
 concurrency: {group: rate-test}
 jobs:
   bench:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - run: python3 bench.py
+      - run: pip install -q websockets
+      - run: ${{ inputs.cmd }}
