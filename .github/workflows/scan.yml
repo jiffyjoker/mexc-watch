@@ -1,13 +1,18 @@
-# schedule re-register 2026-10-12 21:05 local time
 name: mexc-scan
 on:
   schedule:
-    - cron: '3-58/5 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
+permissions:
+  actions: write
+  contents: read
+concurrency:
+  group: mexc-scan
+  cancel-in-progress: false
 jobs:
   scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 355
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache/restore@v4
@@ -15,12 +20,22 @@ jobs:
           path: seen.json
           key: seen-${{ github.run_id }}
           restore-keys: seen-
-      - run: python3 scan.py
+      - name: scan every 5 min for ~5.6h
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
           WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
+        run: |
+          for i in $(seq 1 67); do
+            python3 scan.py || echo "scan error"
+            sleep 300
+          done
       - uses: actions/cache/save@v4
         if: always()
         with:
           path: seen.json
           key: seen-${{ github.run_id }}
+      - name: relaunch self
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run mexc-scan -R ${{ github.repository }}
