@@ -2,7 +2,7 @@ import fcntl, json, os, time, urllib.request
 B='https://contract.mexc.com/api/v1/contract/'
 H={'User-Agent':'GrokBot/1.0'}
 DRY=os.environ.get('DRY_RUN')=='1'
-CAP=12
+CAP=30
 DEDUPE={'breakout':12*3600,'retest':12*3600,'sweep':6*3600,'btc_move':3600,'oi_surge':6*3600}
 def get(u,tries=3):
     for i in range(tries):
