@@ -1,1 +1,6 @@
-seen.json
+live_*.log
+levels.json
+levels.tmp
+heartbeat.json
+.lock
+__pycache__/

@@ -15,144 +15,212 @@ jobs:
     timeout-minutes: 355
     steps:
       - uses: actions/checkout@v4
+      - run: pip install -q websockets
       - uses: actions/cache/restore@v4
         with:
           path: |
             seen.json
             oi.json
+            wakes.json
           key: seen-${{ github.run_id }}
           restore-keys: seen-
       - name: scan chunk 1
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
           WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
-        run: for i in 1 2 3 4 5 6; do python3 scan.py || echo "scan error"; sleep 300; done
+          LIVE: '1'
+        run: |
+          python3 scan.py || echo "scan error"
+          python3 live.py --minutes 29.5 > live_1.log 2>&1 &
+          for i in 1 2 3 4 5; do sleep 300; python3 scan.py || echo "scan error"; done
+          wait; grep -E "hb|hot|stage2|ws down|POST|skip|Error" live_1.log | tail -200 || true
       - uses: actions/cache/save@v4
         if: always()
         with:
           path: |
             seen.json
             oi.json
+            wakes.json
           key: seen-${{ github.run_id }}-1
       - name: scan chunk 2
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
           WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
-        run: for i in 1 2 3 4 5 6; do python3 scan.py || echo "scan error"; sleep 300; done
+          LIVE: '1'
+        run: |
+          python3 scan.py || echo "scan error"
+          python3 live.py --minutes 29.5 > live_2.log 2>&1 &
+          for i in 1 2 3 4 5; do sleep 300; python3 scan.py || echo "scan error"; done
+          wait; grep -E "hb|hot|stage2|ws down|POST|skip|Error" live_2.log | tail -200 || true
       - uses: actions/cache/save@v4
         if: always()
         with:
           path: |
             seen.json
             oi.json
+            wakes.json
           key: seen-${{ github.run_id }}-2
       - name: scan chunk 3
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
           WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
-        run: for i in 1 2 3 4 5 6; do python3 scan.py || echo "scan error"; sleep 300; done
+          LIVE: '1'
+        run: |
+          python3 scan.py || echo "scan error"
+          python3 live.py --minutes 29.5 > live_3.log 2>&1 &
+          for i in 1 2 3 4 5; do sleep 300; python3 scan.py || echo "scan error"; done
+          wait; grep -E "hb|hot|stage2|ws down|POST|skip|Error" live_3.log | tail -200 || true
       - uses: actions/cache/save@v4
         if: always()
         with:
           path: |
             seen.json
             oi.json
+            wakes.json
           key: seen-${{ github.run_id }}-3
       - name: scan chunk 4
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
           WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
-        run: for i in 1 2 3 4 5 6; do python3 scan.py || echo "scan error"; sleep 300; done
+          LIVE: '1'
+        run: |
+          python3 scan.py || echo "scan error"
+          python3 live.py --minutes 29.5 > live_4.log 2>&1 &
+          for i in 1 2 3 4 5; do sleep 300; python3 scan.py || echo "scan error"; done
+          wait; grep -E "hb|hot|stage2|ws down|POST|skip|Error" live_4.log | tail -200 || true
       - uses: actions/cache/save@v4
         if: always()
         with:
           path: |
             seen.json
             oi.json
+            wakes.json
           key: seen-${{ github.run_id }}-4
       - name: scan chunk 5
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
           WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
-        run: for i in 1 2 3 4 5 6; do python3 scan.py || echo "scan error"; sleep 300; done
+          LIVE: '1'
+        run: |
+          python3 scan.py || echo "scan error"
+          python3 live.py --minutes 29.5 > live_5.log 2>&1 &
+          for i in 1 2 3 4 5; do sleep 300; python3 scan.py || echo "scan error"; done
+          wait; grep -E "hb|hot|stage2|ws down|POST|skip|Error" live_5.log | tail -200 || true
       - uses: actions/cache/save@v4
         if: always()
         with:
           path: |
             seen.json
             oi.json
+            wakes.json
           key: seen-${{ github.run_id }}-5
       - name: scan chunk 6
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
           WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
-        run: for i in 1 2 3 4 5 6; do python3 scan.py || echo "scan error"; sleep 300; done
+          LIVE: '1'
+        run: |
+          python3 scan.py || echo "scan error"
+          python3 live.py --minutes 29.5 > live_6.log 2>&1 &
+          for i in 1 2 3 4 5; do sleep 300; python3 scan.py || echo "scan error"; done
+          wait; grep -E "hb|hot|stage2|ws down|POST|skip|Error" live_6.log | tail -200 || true
       - uses: actions/cache/save@v4
         if: always()
         with:
           path: |
             seen.json
             oi.json
+            wakes.json
           key: seen-${{ github.run_id }}-6
       - name: scan chunk 7
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
           WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
-        run: for i in 1 2 3 4 5 6; do python3 scan.py || echo "scan error"; sleep 300; done
+          LIVE: '1'
+        run: |
+          python3 scan.py || echo "scan error"
+          python3 live.py --minutes 29.5 > live_7.log 2>&1 &
+          for i in 1 2 3 4 5; do sleep 300; python3 scan.py || echo "scan error"; done
+          wait; grep -E "hb|hot|stage2|ws down|POST|skip|Error" live_7.log | tail -200 || true
       - uses: actions/cache/save@v4
         if: always()
         with:
           path: |
             seen.json
             oi.json
+            wakes.json
           key: seen-${{ github.run_id }}-7
       - name: scan chunk 8
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
           WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
-        run: for i in 1 2 3 4 5 6; do python3 scan.py || echo "scan error"; sleep 300; done
+          LIVE: '1'
+        run: |
+          python3 scan.py || echo "scan error"
+          python3 live.py --minutes 29.5 > live_8.log 2>&1 &
+          for i in 1 2 3 4 5; do sleep 300; python3 scan.py || echo "scan error"; done
+          wait; grep -E "hb|hot|stage2|ws down|POST|skip|Error" live_8.log | tail -200 || true
       - uses: actions/cache/save@v4
         if: always()
         with:
           path: |
             seen.json
             oi.json
+            wakes.json
           key: seen-${{ github.run_id }}-8
       - name: scan chunk 9
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
           WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
-        run: for i in 1 2 3 4 5 6; do python3 scan.py || echo "scan error"; sleep 300; done
+          LIVE: '1'
+        run: |
+          python3 scan.py || echo "scan error"
+          python3 live.py --minutes 29.5 > live_9.log 2>&1 &
+          for i in 1 2 3 4 5; do sleep 300; python3 scan.py || echo "scan error"; done
+          wait; grep -E "hb|hot|stage2|ws down|POST|skip|Error" live_9.log | tail -200 || true
       - uses: actions/cache/save@v4
         if: always()
         with:
           path: |
             seen.json
             oi.json
+            wakes.json
           key: seen-${{ github.run_id }}-9
       - name: scan chunk 10
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
           WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
-        run: for i in 1 2 3 4 5 6; do python3 scan.py || echo "scan error"; sleep 300; done
+          LIVE: '1'
+        run: |
+          python3 scan.py || echo "scan error"
+          python3 live.py --minutes 29.5 > live_10.log 2>&1 &
+          for i in 1 2 3 4 5; do sleep 300; python3 scan.py || echo "scan error"; done
+          wait; grep -E "hb|hot|stage2|ws down|POST|skip|Error" live_10.log | tail -200 || true
       - uses: actions/cache/save@v4
         if: always()
         with:
           path: |
             seen.json
             oi.json
+            wakes.json
           key: seen-${{ github.run_id }}-10
       - name: scan chunk 11
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
           WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
-        run: for i in 1 2 3 4 5 6; do python3 scan.py || echo "scan error"; sleep 300; done
+          LIVE: '1'
+        run: |
+          python3 scan.py || echo "scan error"
+          python3 live.py --minutes 29.5 > live_11.log 2>&1 &
+          for i in 1 2 3 4 5; do sleep 300; python3 scan.py || echo "scan error"; done
+          wait; grep -E "hb|hot|stage2|ws down|POST|skip|Error" live_11.log | tail -200 || true
       - uses: actions/cache/save@v4
         if: always()
         with:
           path: |
             seen.json
             oi.json
+            wakes.json
           key: seen-${{ github.run_id }}-11
       - name: relaunch self
         if: always()
