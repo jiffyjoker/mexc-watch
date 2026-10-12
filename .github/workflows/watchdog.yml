@@ -26,7 +26,7 @@ jobs:
           TEST: ${{ inputs.test }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.loop }}" = "true" ] && [ "$TEST" != "true" ]; then N=11; else N=1; fi
-          for i in $(seq 1 $N); do python3 watchdog.py || echo "watchdog error"; [ $i -lt $N ] && sleep 1800; done
+          for i in $(seq 1 $N); do python3 watchdog.py || echo "watchdog error"; if [ $i -lt $N ]; then sleep 1800; fi; done
       - name: relaunch self
         if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.loop && !inputs.test }}
         env:
