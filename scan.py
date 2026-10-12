@@ -3,7 +3,7 @@ from common import get, load, commit_hits, B, H
 B='https://contract.mexc.com/api/v1/contract/'
 H={'User-Agent':'GrokBot/1.0'}
 DRY=os.environ.get('DRY_RUN')=='1'
-EXCL=r'(STOCK|XAU|XAG|GOLD|SILVER|OIL|NAS|SPX|TSLA|NVDA|AAPL|COIN|MSTR|NICKEL|COPPER|PLAT|PALL|NATGAS|SOX|QQQ|TQQQ|SQQQ|SPY|DJI|HOOD|CRCL)'
+EXCL=r'(STOCK|XAU|XAG|GOLD|SILVER|OIL|NAS|SPX|TSLA|NVDA|AAPL|COIN|MSTR|NICKEL|COPPER|PLAT|PALL|NATGAS|SOX|QQQ|TQQQ|SQQQ|SPY|DJI|HOOD|CRCL|KORU|EWY|EWJ|FXI|TLT|GLD|USO)'
 DEDUPE={'breakout':12*3600,'retest':12*3600,'sweep':6*3600,'btc_move':3600,'oi_surge':6*3600}
 CAP=12
 VB=float(os.environ.get('VB','3'))  # breakout-bar volume vs 24h avg
