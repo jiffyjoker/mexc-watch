@@ -1,0 +1,26 @@
+name: cpi-watch
+on:
+  schedule:
+    - cron: '50 11 14 10 *'
+  workflow_dispatch:
+    inputs:
+      minutes: {description: 'minutes to watch from 12:20 UTC', default: '70'}
+      threshold_pct: {description: 'move % to wake', default: '0.7'}
+      test: {description: 'test mode: one real webhook, 3 min', type: boolean, default: false}
+concurrency:
+  group: cpi-watch
+  cancel-in-progress: false
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - name: watch BTC around CPI
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
+          MIN: ${{ inputs.minutes || '70' }}
+          THR: ${{ inputs.threshold_pct || '0.7' }}
+          TEST: ${{ inputs.test && '--test' || '' }}
+        run: python3 cpi_watch.py --minutes "$MIN" --threshold-pct "$THR" $TEST

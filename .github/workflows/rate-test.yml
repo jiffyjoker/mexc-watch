@@ -1,0 +1,10 @@
+name: rate-test
+on: workflow_dispatch
+concurrency: {group: rate-test}
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 bench.py
