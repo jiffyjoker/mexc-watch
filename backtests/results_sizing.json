@@ -1,0 +1,42 @@
+{
+ "span_days": 14,
+ "signals": 94,
+ "from_": "2026-09-29",
+ "to": "2026-10-12",
+ "stop_dist_pct": {
+  "min": 1.2,
+  "median": 1.2
+ },
+ "current": {
+  "trades": 50,
+  "win_pct": 52.0,
+  "avg_R": 0.363,
+  "total_R": 18.15,
+  "reduced_size_trades": 17,
+  "total_usd": 32.95,
+  "end_equity": 92.95,
+  "max_dd_pct": 25.0,
+  "skips": {
+   "corr_cap": 12,
+   "half_book": 24,
+   "max3": 6,
+   "same_coin": 2
+  }
+ },
+ "stop_distance_fit": {
+  "trades": 52,
+  "win_pct": 48.1,
+  "avg_R": 0.222,
+  "total_R": 11.56,
+  "reduced_size_trades": 20,
+  "total_usd": 20.04,
+  "end_equity": 80.04,
+  "max_dd_pct": 25.0,
+  "skips": {
+   "corr_cap": 13,
+   "half_book": 23,
+   "max3": 4,
+   "same_coin": 2
+  }
+ }
+}
