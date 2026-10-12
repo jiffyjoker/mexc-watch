@@ -5,7 +5,7 @@ the websocket is down. Stage 2: 5s after each 15m close, fetch 15m klines for ho
 breakout rules (scan.signals), then the OI/funding gates, then wake."""
 import argparse, asyncio, json, os, time
 import scan
-from common import get, load, commit_hits, B
+from common import get, load, commit_hits, taker_buy_share, taker_against, B
 a=argparse.ArgumentParser(); a.add_argument('--minutes',type=float,default=30); o=a.parse_args()
 END=time.time()+o.minutes*60
 px={}; hist={}; hot={}; st=dict(mode='init',msgs=0,reconnects=0,rest_calls=0)
@@ -36,7 +36,9 @@ def stage2(levels):
             o6=L.get('oi_6h_pct'); fr=L.get('funding',0) or 0
             if o6 is not None and o6<-1: print('skip OI falling',s,flush=True); continue
             if (side=='long' and fr>=0.0005) or (side=='short' and fr<=-0.0005): print('skip funding',s,flush=True); continue
-            hits.append(dict(signal='breakout',symbol=s,side=side,level=lvl,close=k['close'][i],bar=k['time'][i],via='live',
+            tb=taker_buy_share(s)
+            if taker_against(side,tb): print('skip taker',s,side,round(tb,3),flush=True); continue
+            hits.append(dict(signal='breakout',taker_buy_pct=None if tb is None else round(tb,3),symbol=s,side=side,level=lvl,close=k['close'][i],bar=k['time'][i],via='live',
                 past_level_pct=round(abs(k['close'][i]/lvl-1)*100,3),arm_loc=L.get('arm_loc'),
                 **{x:L.get(x) for x in ('funding','funding_pct','funding_extreme','oi_1h_pct','oi_6h_pct')}))
     print(time.strftime('%H:%M:%SZ',time.gmtime()),'stage2 checked',len(cands),'hits',len(hits),'sent',commit_hits(hits),flush=True)

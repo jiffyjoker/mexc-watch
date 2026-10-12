@@ -42,3 +42,12 @@ def commit_hits(hits):
         if not DRY:
             json.dump(seen,open('seen.json','w')); json.dump([w for w in wakes if now-w['t']<3*86400],open('wakes.json','w'))
     return sent
+def taker_buy_share(sym,n=100):
+    """Buy share of the last n public trades by volume (MEXC deals: T=1 buy, 2 sell). None if unavailable."""
+    try:
+        d=get(B+f'deals/{sym}?limit={n}',tries=2); t=sum(float(x['v']) for x in d)
+        return sum(float(x['v']) for x in d if x.get('T')==1)/t if t else None
+    except Exception: return None
+def taker_against(side,share):
+    """RULES triad: taker flow must agree with the side. Missing data never blocks."""
+    return share is not None and ((side=='long' and share<0.5) or (side=='short' and share>0.5))
