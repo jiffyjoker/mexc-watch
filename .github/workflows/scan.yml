@@ -17,23 +17,143 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/cache/restore@v4
         with:
-          path: seen.json
+          path: |
+            seen.json
+            oi.json
           key: seen-${{ github.run_id }}
           restore-keys: seen-
-      - name: scan every 5 min for ~5.6h
+      - name: scan chunk 1
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
           WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
-        run: |
-          for i in $(seq 1 67); do
-            python3 scan.py || echo "scan error"
-            sleep 300
-          done
+        run: for i in 1 2 3 4 5 6; do python3 scan.py || echo "scan error"; sleep 300; done
       - uses: actions/cache/save@v4
         if: always()
         with:
-          path: seen.json
-          key: seen-${{ github.run_id }}
+          path: |
+            seen.json
+            oi.json
+          key: seen-${{ github.run_id }}-1
+      - name: scan chunk 2
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
+        run: for i in 1 2 3 4 5 6; do python3 scan.py || echo "scan error"; sleep 300; done
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: |
+            seen.json
+            oi.json
+          key: seen-${{ github.run_id }}-2
+      - name: scan chunk 3
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
+        run: for i in 1 2 3 4 5 6; do python3 scan.py || echo "scan error"; sleep 300; done
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: |
+            seen.json
+            oi.json
+          key: seen-${{ github.run_id }}-3
+      - name: scan chunk 4
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
+        run: for i in 1 2 3 4 5 6; do python3 scan.py || echo "scan error"; sleep 300; done
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: |
+            seen.json
+            oi.json
+          key: seen-${{ github.run_id }}-4
+      - name: scan chunk 5
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
+        run: for i in 1 2 3 4 5 6; do python3 scan.py || echo "scan error"; sleep 300; done
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: |
+            seen.json
+            oi.json
+          key: seen-${{ github.run_id }}-5
+      - name: scan chunk 6
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
+        run: for i in 1 2 3 4 5 6; do python3 scan.py || echo "scan error"; sleep 300; done
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: |
+            seen.json
+            oi.json
+          key: seen-${{ github.run_id }}-6
+      - name: scan chunk 7
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
+        run: for i in 1 2 3 4 5 6; do python3 scan.py || echo "scan error"; sleep 300; done
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: |
+            seen.json
+            oi.json
+          key: seen-${{ github.run_id }}-7
+      - name: scan chunk 8
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
+        run: for i in 1 2 3 4 5 6; do python3 scan.py || echo "scan error"; sleep 300; done
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: |
+            seen.json
+            oi.json
+          key: seen-${{ github.run_id }}-8
+      - name: scan chunk 9
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
+        run: for i in 1 2 3 4 5 6; do python3 scan.py || echo "scan error"; sleep 300; done
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: |
+            seen.json
+            oi.json
+          key: seen-${{ github.run_id }}-9
+      - name: scan chunk 10
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
+        run: for i in 1 2 3 4 5 6; do python3 scan.py || echo "scan error"; sleep 300; done
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: |
+            seen.json
+            oi.json
+          key: seen-${{ github.run_id }}-10
+      - name: scan chunk 11
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          WEBHOOK_AUTH: ${{ secrets.WEBHOOK_AUTH }}
+        run: for i in 1 2 3 4 5 6; do python3 scan.py || echo "scan error"; sleep 300; done
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: |
+            seen.json
+            oi.json
+          key: seen-${{ github.run_id }}-11
       - name: relaunch self
         if: always()
         env:

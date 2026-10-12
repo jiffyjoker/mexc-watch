@@ -3,7 +3,7 @@ B='https://contract.mexc.com/api/v1/contract/'
 H={'User-Agent':'GrokBot/1.0'}
 DRY=os.environ.get('DRY_RUN')=='1'
 EXCL=r'(STOCK|XAU|XAG|GOLD|SILVER|OIL|NAS|SPX|TSLA|NVDA|AAPL|COIN|MSTR|NICKEL|COPPER|PLAT|PALL|NATGAS|SOX|QQQ|TQQQ|SQQQ|SPY|DJI|HOOD|CRCL)'
-DEDUPE={'breakout':12*3600,'retest':12*3600,'sweep':6*3600,'btc_move':3600}
+DEDUPE={'breakout':12*3600,'retest':12*3600,'sweep':6*3600,'btc_move':3600,'oi_surge':6*3600}
 CAP=12
 VB=float(os.environ.get('VB','3'))  # breakout-bar volume vs 24h avg
 RNG=float(os.environ.get('RNG','0.07'))
@@ -55,6 +55,17 @@ def main():
           and not re.search(EXCL,t['symbol'])]
     tick=sorted(tick,key=lambda t:-float(t['amount24']))[:TOP]
     hits=[]
+    oi=json.load(open('oi.json')) if os.path.exists('oi.json') else {}
+    def oichg(s,h):
+        pts=oi.get(s,[])
+        if not pts or pts[-1][0]-pts[0][0]<h*3600*0.9: return None
+        old=min(pts,key=lambda p:abs(p[0]-(pts[-1][0]-h*3600)))
+        return round((pts[-1][1]/old[1]-1)*100,2) if old[1] else None
+    for t in tick:
+        try: oi.setdefault(t['symbol'],[]).append([int(now),float(t['holdVol'])])
+        except Exception: pass
+    oi={k:[p for p in v if now-p[0]<=24*3600] for k,v in oi.items() if v and now-v[-1][0]<=24*3600}
+    json.dump(oi,open('oi.json','w'))
     def add(sig,s,side,lvl,extra):
         key=f"{'level' if sig in ('breakout','retest') else sig}:{s}"  # breakout+retest share one per-coin slot
         if now-seen.get(key,0)<DEDUPE[sig]: return
@@ -72,8 +83,18 @@ def main():
         i=closed(k,now)
         try: sg=signals(k,i,float(t.get('riseFallRate',0)))
         except Exception: continue
+        o1,o6=oichg(s,1),oichg(s,6)
+        try: fr=float(t.get('fundingRate') or 0)
+        except Exception: fr=0.0
+        ex=dict(close=k['close'][i],bar=k['time'][i],funding=fr,funding_pct=round(fr*100,4),funding_extreme=abs(fr)>=0.0005,oi_1h_pct=o1,oi_6h_pct=o6)
         for sig,side,lvl in sg:
-            add(sig,s,side,lvl,dict(close=k['close'][i],bar=k['time'][i],funding=t.get('fundingRate')))
+            if sig in ('breakout','retest') and o6 is not None and o6<-1: continue  # OI falling over 6h
+            if sig in ('breakout','retest') and ((side=='long' and fr>=0.0005) or (side=='short' and fr<=-0.0005)): continue  # crowded funding
+            add(sig,s,side,lvl,ex)
+        # OI surge: OI +15% in 1h with price moving the day's way over the last hour
+        chg=float(t.get('riseFallRate',0)); c=k['close']; p1=c[i]/c[i-4]-1
+        if o1 is not None and o1>=15 and ((chg>0 and p1>0.003) or (chg<0 and p1<-0.003)):
+            add('oi_surge',s,'long' if chg>0 else 'short',c[i-4],ex)
         time.sleep(0.05)
     day=time.strftime('%Y-%m-%d',time.gmtime(now+36000))
     cnt=seen.get('_n_'+day,0)
