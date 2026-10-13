@@ -1,5 +1,5 @@
 # MEXC desk — SYSTEM MAP (read first every session; update with every change)
-Source of truth: box `/workspace/mexc-watch/SYSTEM_MAP.md` (copy in repo jiffyjoker/mexc-watch). Rules live in `RULES.md` — this file maps the system, it does not restate rules. Last verified against code: 2026-10-13 00:30 local time.
+Source of truth: box `/workspace/mexc-watch/SYSTEM_MAP.md` (copy in repo jiffyjoker/mexc-watch). Rules live in `RULES.md` — this file maps the system, it does not restate rules. Last verified against code: 2026-10-14 00:45 AEST.
 
 ## 1. Flow
 ```mermaid
@@ -10,7 +10,7 @@ flowchart TD
     S2[live.py stage2: 5s after each 15m close, breakout rules + gates]
     REST[scan.py every 5 min: breakout/retest/sweep/btc_move/oi_surge; OI+funding gates; writes levels.json, oi.json]
     WD[watchdog.yml: cron 7,37 + self-chain loop; restarts mexc-scan, else scanner_down wake; backup trigger for review]
-    RV[review.yml 21:00 UTC = 7am local time: scores wakes 1h/4h/12h -> reviews/DATE.md + daily_review wake]
+    RV[review.yml 21:00 UTC = 7am AEST: scores wakes 1h/4h/12h -> reviews/DATE.md + daily_review wake]
     CPI[cpi-watch.yml: Wed 14 Oct BTC move watcher, cap 4 wakes]
     SCAN --> WS --> S2
     SCAN --> REST
@@ -34,9 +34,9 @@ flowchart TD
   PB -.->|reviews/paper_vs_real.md| WK
   subgraph RT[Box routines]
     KA[mexc-keep-awake every 4h at :53: box scripts + scan run alive]
-    CW[CPI Wednesday watch: 14 Oct 10:15/10:31/10:40/10:55pm local time]
-    SC[Start CPI watcher: Wed 14 Oct 6:07pm local time]
-    WK[Weekly MEXC improvement: Sun 7pm local time, first 18 Oct]
+    CW[CPI Wednesday watch: 14 Oct 10:15/10:31/10:40/10:55pm AEST]
+    SC[Start CPI watcher: Wed 14 Oct 6:07pm AEST]
+    WK[Weekly MEXC improvement: Sun 7pm AEST, first 18 Oct]
   end
   KA -.-> SCAN
   KA -.-> G
@@ -52,17 +52,18 @@ flowchart TD
 | cpi-watch | Wed CPI BTC watch (cron `50 11 14 10 *` UTC + dispatch) | `cpi-watch.yml`, `cpi_watch.py` | `gh run list -w cpi-watch -L 2 -R jiffyjoker/mexc-watch` | `gh workflow run cpi-watch -R jiffyjoker/mexc-watch` (test: `-f test=true`) |
 | rate-test | ad-hoc probe runner | `rate-test.yml`, `bench.py`, `ws_probe.py` | n/a | dispatch only |
 | guard.py | stops/trailing/brake/outage | box | `pgrep -af "python3 guard.py"`; `tail -5 /workspace/mexc-watch/guard.log`; `cat guard_state.json brake.json` | supervise.sh restarts within 60s |
-| place.py (box) | ONLY way to enter: plan.py sizing, entry submitted with SL + 4R TP attached (order/submit), verifies stop, separate-stop fallback / cancel if unprotected | box | `python3 place.py SYM side --stop P --dry` | on demand |
+| place.py (+guard_api.py) | ONLY way to enter: plan.py sizing, entry submitted with SL + 4R TP attached (order/submit), verifies stop, separate-stop fallback / cancel if unprotected; `--dry` previews | box | `python3 place.py SYM side --stop P --dry` | run on demand by the signal routine |
 | watch.py | box breakout + close alerts | box | `pgrep -af "python3 watch.py"`; `tail -5 watch.log` | supervise.sh |
 | paper/paper.py | PAPER book (never trades: strips MEXC_* env, public GET only). Simulates every wake (box inbox.jsonl from watch.py hook: woke/prefilter/cap/brake skips; bot decisions from last_signal_decision.json) at live price, plan.py sizing, guard.py exits, taker 0.02%/side; plus 9 experimental paper-only signals (experiments.py + trend_signals.py: sr_bounce, v_reversal, vwap_cross, funding_fade, brk4h, momo, pullback20, btc_eth_dopen, orb_utc; top-50, 15m closes, background fetch ~51 req/15m, R-only sub-book). Files: paper/book.json, ledger.csv, open_positions.json, paper.log. 07:10 daily appends reviews/paper_vs_real.md (per-trade real action vs paper R, skip saved/cost, R per signal type vs backtest); 07:10 also spawns paper/missed.py -> reviews/missed_moves.md | box | `pgrep -af paper/paper.py`; `tail paper/paper.log`; `python3 paper/test_papersim.py`; `python3 paper/paper.py --report` | supervise.sh |
 | supervise.sh | keeps guard+watch+lvb+paper+edge_paper alive | box | `pgrep -af supervise.sh`; `tail supervise.log` | `cd /workspace/mexc-watch && setsid nohup bash supervise.sh >/dev/null 2>&1 &` |
 | Webhook secrets | WEBHOOK_URL / WEBHOOK_AUTH (repo secrets) = box env MEXC_RESEARCH_WEBHOOK_* | GitHub secrets / box env | `gh secret list -R jiffyjoker/mexc-watch` (names only — never print values) | `gh secret set` from env, no echo |
-| Routines | research-signal, keep-awake, CPI watch, Start CPI watcher, Weekly improvement | Grok Bot routines | routine list | re-enable only if the owner asked |
+| Routines | research-signal, keep-awake, CPI watch, Start CPI watcher, Weekly improvement | Grok Bot routines | routine list | re-enable only if Nathan asked |
 
 State: repo actions/cache key `seen-<run_id>[-chunk]` holds seen.json, oi.json, wakes.json. Box: state.json (watch arming), guard_state.json, brake.json, trades.csv, last_signal_decision.json.
 
 ## 3. Rules (summary — details in RULES.md)
-- Risk 5% of live equity at the stop; A+ up to 7%; 2.5% after 2 straight losses; pause after 4. Isolated 10x default, max 3 open, ≥ half the book free.
+- Risk 5% of live equity at the stop; A+ up to 7%; 2.5% after 2 straight losses; pause after 4. Isolated 20x default (10x fallback if liq < 1.5x stop distance; plan.py), max 3 open, ≥ half the book free.
+- Entries via place.py only: stop attached to the entry order (MEXC keeps SL/TP on the resting order, becomes a position stop on fill); guard still repairs/trails.
 - Gates: side = day's direction; no-chase location measured at ARM time (close 2h before break: 0.50–0.85 long / 0.15–0.50 short) and ≤1% past level; breakouts/retests dropped if OI 6h < −1% or funding ≥ ±0.05% in trade direction.
 - Exit: trailing stop default (BE+fees at 1R, then 1 ATR(15m) behind best, tighten-only), safety TP 4R. Nobody else moves a stop.
 
@@ -71,12 +72,14 @@ State: repo actions/cache key `seen-<run_id>[-chunk]` holds seen.json, oi.json, 
 |---|---|---|
 | 2026-10-12 | Repo public (free unlimited Actions minutes) | — |
 | 2026-10-12 | Self-relaunching workflow_dispatch loop instead of cron | GitHub schedule cron never fired |
+| 2026-10-13 | Morning live-vs-bt: HYPE +0.45R trail exit 84.554; premature .lvb_last cleared; get() retries + loop ignores pre-0705 stamp |
 | 2026-10-12 | OI history self-built from holdVol (oi.json) | 1h usable ~11pm 12 Oct, 6h ~3:30am 13 Oct |
 | 2026-10-12 | Websocket two-stage scan (REST signals kept) | Live test caught XRP short breakout within seconds |
 | 2026-10-12 | Arm-time location gate | Old check passed 9/129 breakouts (7d), arm-time 94/129, avg +0.21R vs +0.16R |
 | 2026-10-12 | Rate limits OK | Back-to-back scans on GitHub runner, ~10× normal: 0 HTTP 429 in 1184 requests |
 | 2026-10-12 | Kept 15m close trigger (not earlier triggers) | Early triggers caught more, made less per trade |
-| 2026-10-12 | Trailing stop = default exit (the owner approved) | 14d/94 filtered trades: +16.1R vs +14.2R fixed, DD 10.8R vs 12.0R; built version +23.6R on 127; 4000 sim paths: never loosened |
+| 2026-10-12 | Trailing stop = default exit (Nathan approved) | 14d/94 filtered trades: +16.1R vs +14.2R fixed, DD 10.8R vs 12.0R; built version +23.6R on 127; 4000 sim paths: never loosened |
+| 2026-10-13 | 20x isolated default for new trades (Nathan approved) | Halves margin per trade; MMR 0.23–0.5% → liq 4.5–4.8% away at 20x vs max 3% stop; guard drops to 10x if liq < 1.5x stop (HYPE at 3% stop) |
 | 2026-10-13 | Parallel paper book + 4 experimental paper-only signals (owner approved) | Replay 12 Oct 21:00–13 Oct 13:00: 28 wakes, paper +19.98R (23 wins), skips saved 5.07R / cost 24.49R (unconstrained: up to ~20 concurrent, ignores half-book/one-position). HYPE paper +0.56R vs real +0.45R. Experimental 21d backtest top-50: sr_bounce 1666 trades +0.042R avg, v_reversal 1071 +0.023R, vwap_cross 454 +0.040R, funding_fade 54 -0.113R |
 | 2026-10-13 | Added paper signals brk4h (4h high/low break, chase<=1%, day side, arm-time location, vol>=3x), momo, pullback20; missed-move audit; Sunday auto-promotion rule in RULES (>=+0.15R avg over >=30 trades, DD ok; drop <0R) | 21d top-50 backtest: brk4h raw 2729 trades -0.030R, +chase -0.029R, +day/location +0.018R, +vol3x 410 trades (19.5/day) 49.5% win +0.134R net +55R DD 44.7R; momo 1505 +0.032R DD 180R; pullback20 1107 -0.046R. BTC 13:30-13:45 bar (close 83,178.9 > 4h high 83,071.9) caught by raw brk4h only; blocked by day-side/location (down day) |
 | 2026-10-13 | 180d history check (top-50 today, 15m public klines 16 Apr–13 Oct, cache paper/cache/) + trend-day research. Added paper signals btc_eth_dopen (BTC/ETH 4h-break vol>=2x on the daily-open side) and orb_utc (10:00–10:30 AEST range break, vol>=1.5x) | 180d avg R (H1/H2): LIVE 24h breakout rules -0.041 (-0.113/+0.020) n=3471 net -141R DD 293R; brk4h+vol3 -0.065; momo -0.047; sr_bounce -0.042; v_reversal -0.040; btc_eth_dopen +0.016 (-0.004/+0.037) n=536 DD 36R; orb_utc +0.007 (-0.004/+0.018) n=2110; hl_cont -0.052; brk4h_dopen -0.067; brk4h_vreclaim -0.063; regime_brk4h -0.068. 21d edges were regime-specific. No live rule change; owner decides |
@@ -84,14 +87,15 @@ State: repo actions/cache key `seen-<run_id>[-chunk]` holds seen.json, oi.json, 
 | 2026-10-13 | Broad edge search, 365d 1h public data + funding (paper/cache1h, bt_edge.py -> bt_edge.json; params from literature, H1 select / H2 validate). Added paper-only edge_paper.py (halfday_momentum, tsmom_28d) under supervise.sh -> paper/edge_book.json | % of notional per position, taker: halfday_momentum_top50 (00-12 UTC sign -> hold 12-24 UTC) H1 +0.217% (t5.3) / H2 +0.138% (t3.4), 5/7 H2 months positive, maker +0.257/+0.178; tsmom_28d_hold1d H1 +0.035 (t0.6) / H2 +0.175 (t3.2). Failed: inverse live (H1 +0.007R, H2 -0.19R), tsmom 7d/7d, xs momentum 3w, xs 1d reversal, funding carry, BTC first-hour, Monday, weekend, BTC-lead/alt-lag, squeeze, z-score fade, weekly-open (sign flips H1/H2). Caveats: today's top-50 (survivorship), positions correlated (t overstated) |
 | 2026-10-13 | watch.py position-close check moved to its own 30s thread (backup watch.py.bak-20261013-posthread) | AVAX closed 21:23, position_closed wake 21:37:14: old check ran every 5 min inside the main loop, which blocks for minutes on slow public calls at 15m closes. Sandbox test (stubbed API/webhook): close detected and woken in 25s |
 | 2026-10-13 | Resting stop-entry (OCO) backtest, 12 months public 5m bars, point-in-time top-30 (paper/cache5m, bt_stopentry.py -> bt_stopentry.json): NOT adopted | One position at a time: close-confirmed live rules -0.067R (H1 -0.022 / H2 -0.108), 1.5/day, false-break 25%. H1-best stop entry stop_4h buf0.05% arm filters -> H2 -0.033 (fails). 24h buf0.25% arm US +0.024 overall (H1 -0.009/H2 +0.057), 24h buf0.05% none -0.001/-0.001. Stop entries false-break 28-49%. 4h levels worse than 24h. No variant passes H1->H2 |
-| 2026-10-12 | 6pm–7am entry window DEFERRED | +14.2R → +19.8R, but gains concentrated in last week; ask the owner Sun 18 Oct |
+| 2026-10-14 | Sentiment validation (paper/sentiment/, RESULTS.md): X analyst calls, X crowd score, funding extremes — NOT adopted, nothing added to paper | X full-archive search reaches 15 months (25/call); counts endpoint 7d only. 18 analysts, 494 keyword-labelled calls Apr–Oct: 3d directional +0.37% vs always-long +0.44% (no skill over drift); best MerlijnTrader n=36 +1.64% p=0.004 raw (~0.07 after 18-account correction). Crowd bull/bear score 41d: corr next-day -0.31 but halves flip (+1.04 / -0.46%/day). Funding extremes 365d (BTC pctl, market pctl, xs abs/pctl): all fail H2; xs 5% pctl 3d H1 +1.28% t4.8 -> H2 -0.84% t-3.8 |
+| 2026-10-12 | 6pm–7am entry window DEFERRED | +14.2R → +19.8R, but gains concentrated in last week; ask Nathan Sun 18 Oct |
 
 ## 5. Open / pending
-- Sun 18 Oct 7pm: re-run backtests with extra week; ask the owner on entry window.
+- Sun 18 Oct 7pm: re-run backtests with extra week; ask Nathan on entry window.
 - OI gate and oi_surge untestable until OI history accrues (started 12 Oct).
 - live.py REST fallback (ws drop) never exercised live.
 - Wed 14 Oct: Start CPI watcher 6:07pm, CPI watch routine 10:15pm+.
-- HYPE short (opened 11:48pm 12 Oct) = first live trailing-stop trade; confirm guard TRAIL log at +1R.
+- HYPE short (opened 11:48pm 12 Oct) closed ~01:00 13 Oct at trailed stop ~84.54 (~+0.57R); first live trail confirmed (guard TRAIL at 00:49).
 
 ## 6. Session start checklist
 1. Read this file, then RULES.md.
@@ -101,9 +105,16 @@ State: repo actions/cache key `seen-<run_id>[-chunk]` holds seen.json, oi.json, 
 5. `cat last_signal_decision.json`; latest `reviews/*.md`.
 6. After any change: update RULES.md (if rule), this file (sections 2/4/5), and commit the repo copy.
 
+## Wake prefilters (2026-10-13)
+- Box: watch.py imports prefilter.py; before each breakout wake it checks vol>=3x, arm-time location, <1% past, day side, OI 6h (from state.json), funding, taker flow (public deals), and half-book (private assets, box only). Blocked -> `PREFILTER SKIP` in watch.log, coin marked fired (6h). Backup: watch.py.bak-20261013-pf.
+- GitHub: common.taker_buy_share/taker_against used in scan.py and live.py before commit_hits; logs `skip taker`. Nothing private is published; no public 'book busy' flag (would leak trading activity, and GitHub wakes are rare compared with box wakes).
+
 ## Paper book (2026-10-13)
 - Never places orders: paper.py removes MEXC_* env vars at start and has no signed-request code. Box-only; nothing published.
-- Main paper book compounds from the real equity at start, takes every wake regardless of caps (deliberately unconstrained so skips can be scored). Experimental signals live in a separate R-only list (fixed notional) and never wake the bot.
+- Main paper book compounds from 62.75 start equity, takes every wake regardless of caps (deliberately unconstrained so skips can be scored). Experimental signals live in a separate R-only list (fixed notional) and never wake the bot.
 - Backups: watch.py.bak-20261013-paper, supervise.sh.bak-20261013-paper. Replay: `python3 paper/paper.py --replay 2026-10-12T21:00` -> paper/replay/.
 - Missed-move audit: top-50 moves >=1.5% within 4h (last 24h) with no live/paper entry on that coin+direction from 1h before start to extreme; top 40 listed. First run 13 Oct 14:23: 388 moves, 383 'missed' (paper book only live since 13:20, so not meaningful yet).
 - Research tools: paper/cache180.py (resumable 180d 15m cache, 0.3s pacing, ~450 req), paper/bt_trend.py (all candidates + live rules on the cache, H1/H2 split) -> paper/bt_trend.json. Caveat: universe = today's top 50 (survivorship), no OI/funding/taker gates, 15m-bar sim checks the stop first.
+
+## Sentiment research (2026-10-14)
+- paper/sentiment/: collect.py (merges X search dumps -> raw/posts.jsonl, crowd files -> raw/crowd_*), score_calls.py (analyst calls vs MEXC 1h), crowd.py (daily crowd score vs next-day BTC), bt_funding.py (funding extremes, H1/H2). Results in RESULTS.md and *.json. Research only: no process, no wakes, no orders. raw/ holds public X post text; keep it box-only (not in repo).
