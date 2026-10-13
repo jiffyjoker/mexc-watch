@@ -24,7 +24,7 @@ flowchart TD
   subgraph BOX[Box /workspace/mexc-watch, kept alive by supervise.sh]
     G[guard.py every 60s: missing-stop repair, trail at 1R to BE+0.15% then 1 ATR15m behind best, tighten-only, 4R TP; stale-order cancel; 3-loss/day brake.json; api_outage wake]
     W[watch.py every 30s: box breakout watcher + position_closed wakes]
-    PB[paper/paper.py: paper book of every wake + 4 experimental signals; public data only, no wakes]
+    PB[paper/paper.py: paper book of every wake + 7 experimental signals + daily missed-move audit; public data only, no wakes]
   end
   MEXC <--> G
   MEXC --> W -->|webhook| R
@@ -53,7 +53,7 @@ flowchart TD
 | guard.py | stops/trailing/brake/outage | box | `pgrep -af "python3 guard.py"`; `tail -5 /workspace/mexc-watch/guard.log`; `cat guard_state.json brake.json` | supervise.sh restarts within 60s |
 | place.py (box) | ONLY way to enter: plan.py sizing, entry submitted with SL + 4R TP attached (order/submit), verifies stop, separate-stop fallback / cancel if unprotected | box | `python3 place.py SYM side --stop P --dry` | on demand |
 | watch.py | box breakout + close alerts | box | `pgrep -af "python3 watch.py"`; `tail -5 watch.log` | supervise.sh |
-| paper/paper.py | PAPER book (never trades: strips MEXC_* env, public GET only). Simulates every wake (box inbox.jsonl from watch.py hook: woke/prefilter/cap/brake skips; bot decisions from last_signal_decision.json) at live price, plan.py sizing, guard.py exits, taker 0.02%/side; plus 4 experimental paper-only signals (experiments.py: sr_bounce, v_reversal, vwap_cross, funding_fade; top-50, 15m closes, background fetch ~51 req/15m, R-only sub-book). Files: paper/book.json, ledger.csv, open_positions.json, paper.log. 07:10 daily appends reviews/paper_vs_real.md (per-trade real action vs paper R, skip saved/cost, R per signal type vs backtest) | box | `pgrep -af paper/paper.py`; `tail paper/paper.log`; `python3 paper/test_papersim.py`; `python3 paper/paper.py --report` | supervise.sh |
+| paper/paper.py | PAPER book (never trades: strips MEXC_* env, public GET only). Simulates every wake (box inbox.jsonl from watch.py hook: woke/prefilter/cap/brake skips; bot decisions from last_signal_decision.json) at live price, plan.py sizing, guard.py exits, taker 0.02%/side; plus 7 experimental paper-only signals (experiments.py: sr_bounce, v_reversal, vwap_cross, funding_fade, brk4h, momo, pullback20; top-50, 15m closes, background fetch ~51 req/15m, R-only sub-book). Files: paper/book.json, ledger.csv, open_positions.json, paper.log. 07:10 daily appends reviews/paper_vs_real.md (per-trade real action vs paper R, skip saved/cost, R per signal type vs backtest); 07:10 also spawns paper/missed.py -> reviews/missed_moves.md | box | `pgrep -af paper/paper.py`; `tail paper/paper.log`; `python3 paper/test_papersim.py`; `python3 paper/paper.py --report` | supervise.sh |
 | supervise.sh | keeps guard+watch+lvb+paper alive | box | `pgrep -af supervise.sh`; `tail supervise.log` | `cd /workspace/mexc-watch && setsid nohup bash supervise.sh >/dev/null 2>&1 &` |
 | Webhook secrets | WEBHOOK_URL / WEBHOOK_AUTH (repo secrets) = box env MEXC_RESEARCH_WEBHOOK_* | GitHub secrets / box env | `gh secret list -R jiffyjoker/mexc-watch` (names only — never print values) | `gh secret set` from env, no echo |
 | Routines | research-signal, keep-awake, CPI watch, Start CPI watcher, Weekly improvement | Grok Bot routines | routine list | re-enable only if the owner asked |
@@ -77,6 +77,7 @@ State: repo actions/cache key `seen-<run_id>[-chunk]` holds seen.json, oi.json, 
 | 2026-10-12 | Kept 15m close trigger (not earlier triggers) | Early triggers caught more, made less per trade |
 | 2026-10-12 | Trailing stop = default exit (the owner approved) | 14d/94 filtered trades: +16.1R vs +14.2R fixed, DD 10.8R vs 12.0R; built version +23.6R on 127; 4000 sim paths: never loosened |
 | 2026-10-13 | Parallel paper book + 4 experimental paper-only signals (owner approved) | Replay 12 Oct 21:00–13 Oct 13:00: 28 wakes, paper +19.98R (23 wins), skips saved 5.07R / cost 24.49R (unconstrained: up to ~20 concurrent, ignores half-book/one-position). HYPE paper +0.56R vs real +0.45R. Experimental 21d backtest top-50: sr_bounce 1666 trades +0.042R avg, v_reversal 1071 +0.023R, vwap_cross 454 +0.040R, funding_fade 54 -0.113R |
+| 2026-10-13 | Added paper signals brk4h (4h high/low break, chase<=1%, day side, arm-time location, vol>=3x), momo, pullback20; missed-move audit; Sunday auto-promotion rule in RULES (>=+0.15R avg over >=30 trades, DD ok; drop <0R) | 21d top-50 backtest: brk4h raw 2729 trades -0.030R, +chase -0.029R, +day/location +0.018R, +vol3x 410 trades (19.5/day) 49.5% win +0.134R net +55R DD 44.7R; momo 1505 +0.032R DD 180R; pullback20 1107 -0.046R. BTC 13:30-13:45 bar (close 83,178.9 > 4h high 83,071.9) caught by raw brk4h only; blocked by day-side/location (down day) |
 | 2026-10-12 | 6pm–7am entry window DEFERRED | +14.2R → +19.8R, but gains concentrated in last week; ask the owner Sun 18 Oct |
 
 ## 5. Open / pending
@@ -98,3 +99,4 @@ State: repo actions/cache key `seen-<run_id>[-chunk]` holds seen.json, oi.json, 
 - Never places orders: paper.py removes MEXC_* env vars at start and has no signed-request code. Box-only; nothing published.
 - Main paper book compounds from the real equity at start, takes every wake regardless of caps (deliberately unconstrained so skips can be scored). Experimental signals live in a separate R-only list (fixed notional) and never wake the bot.
 - Backups: watch.py.bak-20261013-paper, supervise.sh.bak-20261013-paper. Replay: `python3 paper/paper.py --replay 2026-10-12T21:00` -> paper/replay/.
+- Missed-move audit: top-50 moves >=1.5% within 4h (last 24h) with no live/paper entry on that coin+direction from 1h before start to extreme; top 40 listed. First run 13 Oct 14:23: 388 moves, 383 'missed' (paper book only live since 13:20, so not meaningful yet).
