@@ -1,0 +1,1 @@
+u=$1;p=$2;mkdir -p $(dirname $p);c=$(curl -s -m 60 --retry 2 -o $p.tmp -w %{http_code} $u);if [ "$c" = 200 ]; then mv $p.tmp $p; elif [ "$c" = 404 ]; then rm -f $p.tmp; touch $p.404; else rm -f $p.tmp; fi
