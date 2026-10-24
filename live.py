@@ -2,10 +2,10 @@
 Stage 1: MEXC websocket push.tickers (all coins, ~every 2-3s) -> mark coins 'hot' when within 0.3% of the
 cached 24h level (levels.json, written by scan.py) or moving >1% in a minute. REST ticker polling every 60s if
 the websocket is down. Stage 2: 5s after each 15m close, fetch 15m klines for hot coins only and run the exact
-breakout rules (scan.signals), then the OI/funding gates, then wake."""
+breakout rules (scan.signals), then breakout_check (vol, chase, day side, OI, funding; deals only if those pass), then wake."""
 import argparse, asyncio, json, os, time
 import scan
-from common import get, load, commit_hits, taker_buy_share, taker_against, B
+from common import get, load, commit_hits, breakout_check, B
 a=argparse.ArgumentParser(); a.add_argument('--minutes',type=float,default=30); o=a.parse_args()
 END=time.time()+o.minutes*60
 px={}; hist={}; hot={}; st=dict(mode='init',msgs=0,reconnects=0,rest_calls=0)
@@ -33,14 +33,11 @@ def stage2(levels):
         i=scan.closed(k,now); L=levels.get(s,{})
         for sig,side,lvl in scan.signals(k,i,L.get('chg24',0)):
             if sig!='breakout': continue
-            o6=L.get('oi_6h_pct'); fr=L.get('funding',0) or 0
-            if o6 is not None and o6<-1: print('skip OI falling',s,flush=True); continue
-            if (side=='long' and fr>=0.0005) or (side=='short' and fr<=-0.0005): print('skip funding',s,flush=True); continue
-            tb=taker_buy_share(s)
-            if taker_against(side,tb): print('skip taker',s,side,round(tb,3),flush=True); continue
-            hits.append(dict(signal='breakout',taker_buy_pct=None if tb is None else round(tb,3),symbol=s,side=side,level=lvl,close=k['close'][i],bar=k['time'][i],via='live',
+            reasons,info=breakout_check(s,side,lvl,k,i,oi6=L.get('oi_6h_pct'),funding=L.get('funding'),chg24=L.get('chg24'))
+            if reasons: print('skip',sig,s,side,','.join(reasons),flush=True); continue
+            hits.append(dict(signal='breakout',symbol=s,side=side,level=lvl,close=k['close'][i],bar=k['time'][i],via='live',
                 past_level_pct=round(abs(k['close'][i]/lvl-1)*100,3),arm_loc=L.get('arm_loc'),
-                **{x:L.get(x) for x in ('funding','funding_pct','funding_extreme','oi_1h_pct','oi_6h_pct')}))
+                **info,**{x:L.get(x) for x in ('funding','funding_pct','funding_extreme','oi_1h_pct','oi_6h_pct')}))
     print(time.strftime('%H:%M:%SZ',time.gmtime()),'stage2 checked',len(cands),'hits',len(hits),'sent',commit_hits(hits),flush=True)
 async def ws_loop():
     import websockets

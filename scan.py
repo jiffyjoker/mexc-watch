@@ -1,5 +1,5 @@
 import fcntl, json, os, re, time, urllib.request
-from common import get, load, commit_hits, taker_buy_share, taker_against, B, H
+from common import get, load, commit_hits, taker_buy_share, taker_against, breakout_check, B, H
 B='https://contract.mexc.com/api/v1/contract/'
 H={'User-Agent':'GrokBot/1.0'}
 DRY=os.environ.get('DRY_RUN')=='1'
@@ -85,16 +85,19 @@ def main():
         except Exception: continue
         for sig,side,lvl in sg:
             if sig=='breakout' and live: continue  # live.py owns breakouts (fires seconds after the close)
-            if sig in ('breakout','retest') and o6 is not None and o6<-1: continue  # OI falling over 6h
-            if sig in ('breakout','retest') and ((side=='long' and fr>=0.0005) or (side=='short' and fr<=-0.0005)): continue  # crowded funding
+            if sig=='breakout':
+                reasons,info=breakout_check(s,side,lvl,k,i,oi6=o6,funding=fr,chg24=chg)
+                if reasons: print('skip',sig,s,side,','.join(reasons),flush=True); continue
+                add(sig,s,side,lvl,dict(ex,**info)); continue
+            if sig=='retest' and o6 is not None and o6<-1: continue  # OI falling over 6h
+            if sig=='retest' and ((side=='long' and fr>=0.0005) or (side=='short' and fr<=-0.0005)): continue  # crowded funding
             tb=taker_buy_share(s)
             if taker_against(side,tb): print('skip taker',sig,s,side,round(tb,3),flush=True); continue  # prefilter: taker flow opposes side
             add(sig,s,side,lvl,dict(ex,taker_buy_pct=None if tb is None else round(tb,3)))
         c=k['close']; p1=c[i]/c[i-4]-1
         if o1 is not None and o1>=15 and ((chg>0 and p1>0.003) or (chg<0 and p1<-0.003)):
-            sd='long' if chg>0 else 'short'; tb=taker_buy_share(s)
-            if taker_against(sd,tb): print('skip taker oi_surge',s,flush=True)
-            else: add('oi_surge',s,sd,c[i-4],dict(ex,taker_buy_pct=None if tb is None else round(tb,3)))
+            sd='long' if chg>0 else 'short'  # muted in commit_hits; do not spend a deals request
+            add('oi_surge',s,sd,c[i-4],dict(ex,taker_buy_pct=None))
         time.sleep(0.05)
     json.dump(dict(t=int(now),levels=levels),open('levels.tmp','w')); os.replace('levels.tmp','levels.json')
     sent=commit_hits(hits)
