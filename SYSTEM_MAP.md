@@ -1,5 +1,5 @@
 # MEXC desk — SYSTEM MAP (read first every session; update with every change)
-Source of truth: box `/workspace/mexc-watch/SYSTEM_MAP.md` (copy in repo jiffyjoker/mexc-watch). Rules live in `RULES.md` — this file maps the system, it does not restate rules. Last verified against code: 2026-10-14 00:45 AEST.
+Source of truth: box `/workspace/mexc-watch/SYSTEM_MAP.md` (copy in repo jiffyjoker/mexc-watch). Rules live in `RULES.md` — this file maps the system, it does not restate rules. Last verified against code: 2026-10-24.
 
 ## 1. Flow
 ```mermaid
@@ -8,7 +8,7 @@ flowchart TD
     SCAN[mexc-scan scan.yml: self-relaunching, 11 x 30-min chunks]
     WS[live.py stage1: websocket push.tickers, hot coins near 24h level; REST poll if ws down]
     S2[live.py stage2: 5s after each 15m close, breakout rules + gates]
-    REST[scan.py every 5 min: breakout/retest/sweep/btc_move/oi_surge; OI+funding gates; writes levels.json, oi.json]
+    REST[scan.py every 5 min: breakout/retest/sweep/btc_move; oi_surge logged then muted; breakout prefilter; writes levels.json, oi.json]
     WD[watchdog.yml: cron 7,37 + self-chain loop; restarts mexc-scan, else scanner_down wake; backup trigger for review]
     RV[review.yml 21:00 UTC = 7am AEST: scores wakes 1h/4h/12h -> reviews/DATE.md + daily_review wake]
     CPI[cpi-watch.yml: Wed 14 Oct BTC move watcher, cap 4 wakes]
@@ -99,6 +99,7 @@ State: repo actions/cache key `seen-<run_id>[-chunk]` holds seen.json, oi.json, 
 | 2026-10-14 | Signal-SELECTION backtest (paper/hist/bt_select.py -> bt_select.json; live rules + OI6h + taker gates, 11,103 candidates Dec 2021–Sep 2026, small-account start compounding, MEXC contract sizes min 1 contract, 20x, margin <= half book; pre-registered N 1/2/3/5 x risk 5%/N or 2.5%, ranking first/volmult/oi6/location/dist, same-side cap 2, US session). No live change | CORRECTION to bt_multi 'one position -0.094R': its one_pos sorted same-bar ties by R (picked worst first) -> biased. Proper first-come N1 5%: +0.004R, 0.84/day, ruin (DD 98%). H1-best = N3, 1.67% each, rank by OI 6h rise: H1 +0.028R CAGR +13% DD 70% -> H2 +0.034R CAGR +35% DD 69%, all years + (2021 .10, 22 .013, 23 .03, 24 .008, 25 .019, 26 .087), 3.6 trades/day. N5 1% first: all-period DD 70%, H2 DD 52%. Every variant has DD >= 55% (best: N5 + same-side cap 2, 55%) -> edge ~+0.03R too thin for >=1% risk/trade. Min contract: <=1% rejected except 2.5% x N5 (margin cap). US-session: H1 +0.047 -> H2 +0.009 (fails) |
 | 2026-10-14 | Low-risk selection test (paper/hist/bt_select2.py -> bt_select2.json) -> N3 / 0.5% / OI-6h rank added PAPER-ONLY as paper/multi_paper.py under supervise.sh (backup supervise.sh.bak-20261014-multi) -> paper/multi_book.json | N3 oi6: 0.5% CAGR +16% DD 30.6% (H1 +15%/DD26, H2 +16%/DD23, avg +0.034R), years 2021 +4.7, 2022 -1.6, 2023 +21, 2024 +0.4, 2025 +1.9, 2026 +47 (5/6), 3.5 trades/day, min-contract skips 144/6247 (2.3%); 0.75% +25%/DD44; 1% +29%/DD57. N5 cap2: 0.5% +7.7%/DD34 but H1 -0.9% (fails); 0.75% DD46; 1% DD55. Only N3 0.5% meets DD<=35%, H2>0, 5/6 years. multi_paper derives from book.json breakout/retest wakes that passed live prefilters; same-bar tie rank uses current state.json OI 6h (approximation) |
 | 2026-10-12 | 6pm–7am entry window DEFERRED | +14.2R → +19.8R, but gains concentrated in last week; ask the owner Sun 18 Oct |
+| 2026-10-24 | oi_surge muted in commit_hits (logged, not posted, not stored in wakes.json). Breakout wakes run common.breakout_check first: vol>=2x of prior 96 bars, chase<=1.5%, day side, OI 6h not down more than 1%, funding not at/past ±0.05% with the trade, taker flow with the side. Missing inputs do not block. deals fetched only after the cheap gates pass. Offline: python3 test_prefilter.py | reviews/2026-10-24.md: 19 of 24 wakes were oi_surge |
 
 ## 5. Open / pending
 - Sun 18 Oct 7pm: re-run backtests with extra week; ask the owner on entry window.
@@ -119,7 +120,7 @@ State: repo actions/cache key `seen-<run_id>[-chunk]` holds seen.json, oi.json, 
 
 ## Wake prefilters (2026-10-13)
 - Box: watch.py imports prefilter.py; before each breakout wake it checks vol>=3x, arm-time location, <1% past, day side, OI 6h (from state.json), funding, taker flow (public deals), and half-book (private assets, box only). Blocked -> `PREFILTER SKIP` in watch.log, coin marked fired (6h). Backup: watch.py.bak-20261013-pf.
-- GitHub: common.taker_buy_share/taker_against used in scan.py and live.py before commit_hits; logs `skip taker`. Nothing private is published; no public 'book busy' flag (would leak trading activity, and GitHub wakes are rare compared with box wakes).
+- GitHub: `common.breakout_check` runs before every breakout wake (scan.py, and live.py stage 2). Blocks log `skip breakout SYM side reason,...` with reason codes `vol_lt_2x`, `chase_gt_1.5pct`, `against_day`, `oi_6h_fall`, `funding_extreme`, `taker_against`. Missing inputs do not block. `deals/{symbol}` is fetched only after vol, chase, day side, OI 6h, and funding pass. Retest/sweep still use taker_buy_share/taker_against and log `skip taker`. `oi_surge` is still detected but `common.MUTED` drops it in commit_hits (`muted oi_surge SYM`); it is not posted and not written to wakes.json. Nothing private is published.
 
 ## Paper book (2026-10-13)
 - Never places orders: paper.py removes MEXC_* env vars at start and has no signed-request code. Box-only; nothing published.

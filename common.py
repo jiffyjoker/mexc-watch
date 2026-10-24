@@ -4,6 +4,7 @@ H={'User-Agent':'GrokBot/1.0'}
 DRY=os.environ.get('DRY_RUN')=='1'
 CAP=30
 DEDUPE={'breakout':12*3600,'retest':12*3600,'sweep':6*3600,'btc_move':3600,'oi_surge':6*3600}
+MUTED={'oi_surge'}  # detected for the log, never posted
 def get(u,tries=3):
     for i in range(tries):
         try:
@@ -30,7 +31,9 @@ def commit_hits(hits):
         now=time.time(); seen=load('seen.json',{}); wakes=load('wakes.json',[])
         day=time.strftime('%Y-%m-%d',time.gmtime(now+36000)); cnt=seen.get('_n_'+day,0); sent=0
         for h in hits:
-            sig=h['signal']; key=f"{'level' if sig in ('breakout','retest') else sig}:{h['symbol']}"
+            sig=h['signal']
+            if sig in MUTED: print('muted',sig,h['symbol'],flush=True); continue
+            key=f"{'level' if sig in ('breakout','retest') else sig}:{h['symbol']}"
             if now-seen.get(key,0)<DEDUPE.get(sig,6*3600): continue
             if cnt>=CAP: print('cap reached',flush=True); break
             try: post({'event':sig,'source':'github',**h})
@@ -51,3 +54,18 @@ def taker_buy_share(sym,n=100):
 def taker_against(side,share):
     """RULES triad: taker flow must agree with the side. Missing data never blocks."""
     return share is not None and ((side=='long' and share<0.5) or (side=='short' and share>0.5))
+def breakout_check(sym,side,level,k,i,oi6=None,funding=None,chg24=None,taker=None):
+    """Mechanical breakout gates shared with the downstream bot. Returns (reasons, info).
+    A missing input never blocks. Public deals are fetched only after the cheap gates pass."""
+    R=[]; L=side in ('L','long')
+    cl,v=k['close'],k['vol']
+    if i>=100 and i<len(v):
+        av=sum(v[i-96:i])/96 or 1
+        if v[i]<2*av: R.append('vol_lt_2x')
+    if level and i<len(cl) and abs(cl[i]/level-1)>0.015: R.append('chase_gt_1.5pct')
+    if chg24 is not None and ((L and chg24<0) or (not L and chg24>0)): R.append('against_day')
+    if oi6 is not None and oi6<-1: R.append('oi_6h_fall')
+    if funding is not None and ((L and funding>=0.0005) or (not L and funding<=-0.0005)): R.append('funding_extreme')
+    if not R and taker is None: taker=taker_buy_share(sym)
+    if taker is not None and ((L and taker<0.5) or (not L and taker>0.5)): R.append('taker_against')
+    return R, dict(taker_buy_pct=None if taker is None else round(float(taker),3))
