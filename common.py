@@ -4,7 +4,7 @@ H={'User-Agent':'GrokBot/1.0'}
 DRY=os.environ.get('DRY_RUN')=='1'
 CAP=30
 DEDUPE={'breakout':12*3600,'retest':12*3600,'sweep':6*3600,'btc_move':3600,'oi_surge':6*3600}
-MUTED={'oi_surge'}  # detected for the log, never posted
+MUTED={'oi_surge','breakout','retest','sweep'}  # 2026-10-25 Nathan: all scanner entry signals paper only; detected for the log, never posted (saves wakes)
 def get(u,tries=3):
     for i in range(tries):
         try:
